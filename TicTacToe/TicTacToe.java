@@ -59,6 +59,7 @@ public class TicTacToe
         }
 
         Integer move = -1;
+
         while (isGoalState() == -1) {
             System.out.println("\nTurn " + turn);
             printBoard();
@@ -193,5 +194,6 @@ public class TicTacToe
     {
         TicTacToe game = new TicTacToe();
         game.start();
+        System.out.println("Thank you for playing");
     }
 }
