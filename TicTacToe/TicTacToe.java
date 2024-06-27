@@ -1,3 +1,9 @@
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 
@@ -5,14 +11,19 @@ import java.util.*;
 // Reorganize code 
 //   - break into more functions 
 //   - move code to more logical locations
+//   - Fix error with x's being replaced by o's in computer
 
 // Implement retry when incorrect input/filled space
 
 public class TicTacToe
 {
-    private String[] board;
+    public static String[] board;
     int p1 = 0; //1 means x, 0 means 0
     int p2 = 0;
+    int game = 0;
+    String p1Name;
+    String p2Name;
+    private String winner;
     private int turn;
     public TicTacToe()
     {
@@ -37,50 +48,124 @@ public class TicTacToe
         }
     }
 
-    public void start() 
-    {
+    /**
+     * Main method to play against AI.
+     */
+    public void startSolo(AI ai) {
+        game ++;
         Scanner input = new Scanner(System.in);
         int playerTurn = 1;
-        System.out.println("Does Player 1 want x's or o's? ");
-        String choice = input.nextLine(); 
-        if (!choice.matches("[oOxX]")) {
-            do {
-                System.out.println("Please select 'x', 'X', 'o', or 'O'.");
-                if (input.hasNextLine()) {
-                    choice = input.nextLine();
-                    if (choice.equals("x") || choice.equals("X")) {
-                        p1 = 1;
-                    }
-                    else if(choice.equals("o") || choice.equals("O")) {
-                        p2 = 1;
-                    }
-                }
-            } while(!choice.matches("[oOxX]"));
-        }
-
-        Integer move = -1;
-
+        int move = -1;
+        p2Name = "Computer";
+        setPlayerSymbols(input);
         while (isGoalState() == -1) {
-            System.out.println("\nTurn " + turn);
+
+            if (playerTurn == 1) {
+                System.out.println("\nTurn " + turn);            
+                printBoard();    
+                System.out.printf("\nPlayer %d's turn. \nWhere would you like to go? [0-8] ", playerTurn);
+                move = Integer.parseInt(input.nextLine());   
+
+                // forces valid input
+                while (!(move < 9 && move > -1 && board[move].equals(" "))) {
+                    System.out.println(move);
+                    System.out.println("Please input a number 0 through 8 located at an empty space");
+                    move = Integer.parseInt(input.nextLine());     
+                }          
+                if (p1 == 1) {
+                    board[move] = "X";
+                } else if (p1 == 0){
+                    board[move] = "O";
+                }
+                playerTurn = 2;
+            } else { // AI's turn 
+                printBoard();
+                move = ai.heuristicScore();
+                System.out.println("Computer's move " + move);
+                if (p2 == 1 && board[move].equals(" ")) {
+        //            System.out.println("Was blank and AI X");
+                    board[move] = "X";
+                } else if (board[move].equals(" ")){
+        //            System.out.println("Was blank and AI O");
+                    board[move] = "O";
+                }
+                playerTurn = 1;
+                turn++;
+            }
+        }
+        // when goal state is reached announce the winner
+        printBoard();
+        int finalResult = isGoalState();
+        if (finalResult == 1) {
+            System.out.println("Congratulations player 1 wins!");
+            winner = "Player 1";
+        } else if (finalResult == 2) {
+            System.out.println("Congratulations Computer wins!");
+            winner = "Computer";
+        } else if (finalResult == 0) {
+            winner = "Draw";
+            System.out.println("Oh no it's a draw.");
+        }
+        System.out.println("Would you like to log this match? (Yes/No) ");
+        if (input.nextLine().equals("Yes")){
+            recordResults("Results.txt");
+        }
+        System.out.println("Would you like to play again? (Yes/No) ");
+        String playAgain = input.nextLine();
+        while (!playAgain.equals("Yes") && !playAgain.equals("No")) {
+            System.out.println("Please select Yes or No: ");
+            if (input.hasNextLine()) {
+                playAgain = input.nextLine();
+            }
+        }
+        if (playAgain.equals("Yes")) {
+            reset();
+            turn = 1;
+            startSolo(ai);
+
+        } else if (playAgain.equals("No")) {
+            System.out.println("Thank you for playing!");
+        }      
+    }
+
+    /**
+     * Main method to play regular.
+     */
+    public void startRegular() 
+    {
+        game ++;
+        Scanner input = new Scanner(System.in);
+        int playerTurn = 1;
+        setPlayerSymbols(input);
+        System.out.println("Player 2 what is your name? ");
+        p2Name = input.nextLine();
+        Integer move = -1;
+        while (isGoalState() == -1) {
+            if (playerTurn == 1) {
+                System.out.println("\nTurn " + turn);                
+            }
+
             printBoard();
+
             System.out.printf("\nPlayer %d's turn. \nWhere would you like to go? [0-8] ", playerTurn);
-            move = Integer.parseInt(input.nextLine());
+            move = Integer.parseInt(input.nextLine());   
 
             // forces valid input
             while (!(move < 9 && move > -1 && board[move].equals(" "))) {
                 System.out.println(move);
                 System.out.println("Please input a number 0 through 8 located at an empty space");
                 move = Integer.parseInt(input.nextLine());     
-            }
-
-            if (playerTurn == 1)  { // player 1's turn
-                if (p1 == 1) {
-                    board[move] = "X";
-                } else {
-                    board[move] = "O";
-                }
-                playerTurn = 2;
-            } else { // player 2's turn 
+            }          
+            if (playerTurn == 1) {
+                if (playerTurn == 1)  { // player 1's turn
+                    if (p1 == 1) {
+                        board[move] = "X";
+                    } else {
+                        board[move] = "O";
+                    }
+                    playerTurn = 2;
+                }                              
+            } else if (playerTurn == 2){ // player 2's turn 
                 if (p2 == 1) {
                     board[move] = "X";
                 } else {
@@ -95,13 +180,42 @@ public class TicTacToe
         int finalResult = isGoalState();
         if (finalResult == 1) {
             System.out.println("Congratulations player 1 wins!");
+            winner = "Player 1";
         } else if (finalResult == 2) {
-            System.out.println("Congratulations player 2 wins!");
+            System.out.println("Congratulations Player 2 wins!");
+            winner = "Player 2";
         } else if (finalResult == 0) {
+            winner = "Draw";
             System.out.println("Oh no it's a draw.");
         }
+        System.out.println("Would you like to log this match? (Yes/No) ");
+        if (input.nextLine().equals("Yes")){
+            recordResults("Results.txt");
+        }
+        System.out.println("Would you like to play again? (Yes/No) ");
+        String playAgain = input.nextLine();
+        while (!playAgain.equals("Yes") && !playAgain.equals("No")) {
+            System.out.println("Please select Yes or No: ");
+            if (input.hasNextLine()) {
+                playAgain = input.nextLine();
+            }
+        }
+        if (playAgain.equals("Yes")) {
+            reset();
+            turn = 1;
+            startRegular();
+        } else if (playAgain.equals("No")) {
+            System.out.println("Thank you for playing!");
+        }      
     }
 
+    /**
+     * Returns the current board state.
+     * @return board.
+     */
+    public static String[] getBoard() {
+        return board;
+    }
 
     /**
      * Returns status of the goal state.
@@ -190,10 +304,83 @@ public class TicTacToe
         return 0; // stop execution of main loop to indicate draw
     }
 
+    private void setPlayerSymbols(Scanner input) {
+        try {
+            System.out.println("Player 1 what is your name? ");
+            if (input.hasNextLine()) {
+                p1Name = input.nextLine();
+            }            
+        } catch (InputMismatchException e) {
+            while (input.hasNextLine()) {
+                System.out.println("Please use a valid name: ");  
+                p1Name = input.nextLine();              
+            }
+        }
+
+        System.out.println("Does Player 1 want X's or O's? ");
+        String choice = input.nextLine();
+        while (!choice.matches("[oOxX]")) {
+            System.out.println("Please select 'x', 'X', 'o', or 'O'.");
+            if (input.hasNextLine()) {
+                choice = input.nextLine();
+            }
+        }
+        if (choice.equalsIgnoreCase("x")) {
+            p1 = 1;
+            p2 = 0;
+        } else {
+            p1 = 0;
+            p2 = 1;
+        }
+    }
+
+    public void reset() {
+        for (int i = 0; i < board.length; i ++) {
+            board[i] = " ";
+        }
+    }
+
+
+    /**
+     * This method stores the results of matches long term in a file.
+     * @param fileName File you wish the results to be written to.
+     */
+    public void recordResults(String fileName) {
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String formattedDate = now.format(formatter);
+        String formattedString = String.format("Game %d: %s   %s", game, winner, formattedDate);            
+
+
+        File file = new File(fileName);
+        boolean isNewFile = !file.exists() || file.length() == 0; // Check if file is empty
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter(fileName, true))) {
+            if (isNewFile) {
+                writer.println("Game    Winner   Date");
+            }
+            writer.println(formattedString);
+        } catch (IOException e) {
+            System.err.println("Error writing to file: " + e.getMessage());
+        }
+    }
+
     public static void main(String args[])
     {
+        Scanner in = new Scanner(System.in);
         TicTacToe game = new TicTacToe();
-        game.start();
-        System.out.println("Thank you for playing");
+        Integer gameMode = -1;
+        AI ai = new AI();           
+        System.out.println("Would you like to play with 1 or 2 players?");
+        while (gameMode != 1 && gameMode != 2) {
+            if (in.hasNextLine()) {
+                gameMode = in.nextInt();            
+            }
+            if (gameMode == 1) {
+                game.startSolo(ai);
+            } else if (gameMode == 2) {
+                game.startRegular();
+            }
+       } 
     }
 }
